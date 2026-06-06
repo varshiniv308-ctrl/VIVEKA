@@ -1,0 +1,46 @@
+{
+  "entities": {
+    "user": {
+      "title": "UserProfile",
+      "description": "Information regarding a user profile inside VIVEKA",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string", "description": "The unique user authentication ID" },
+        "email": { "type": "string", "format": "email", "description": "Email address of the user" },
+        "displayName": { "type": "string", "description": "Display name of the user" },
+        "avatarUrl": { "type": "string", "description": "Avatar graphics selection URL" },
+        "points": { "type": "integer", "description": "Current total compiled score points" },
+        "streak": { "type": "integer", "description": "Daily learning streak count" },
+        "bestStreak": { "type": "integer", "description": "Historical maximum daily streak" },
+        "unlockedBadgeIds": { "type": "array", "description": "Array of achieved badging IDs" },
+        "createdAt": { "type": "integer", "description": "Sanskrit epoch timestamp when profile created" },
+        "level": { "type": "integer", "description": "Calculated level achieved by scoring points" }
+      },
+      "required": ["uid", "email", "displayName", "points", "streak", "level"]
+    },
+    "scoreRecord": {
+      "title": "ScoreRecord",
+      "description": "Detailed log statement representing a quiz completion",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string", "description": "References the foreign user collection key" },
+        "category": { "type": "string", "description": "Quiz category discipline selected" },
+        "correctCount": { "type": "integer", "description": "Correct options selected by seeker" },
+        "totalCount": { "type": "integer", "description": "Volume of questions presented during quiz" },
+        "pointsGained": { "type": "integer", "description": "Calculated points compiled in round" },
+        "createdAt": { "type": "object", "description": "Timestamp representing execution date" }
+      },
+      "required": ["uid", "category", "correctCount", "totalCount", "pointsGained"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": "user",
+      "description": "Store individual player profiles"
+    },
+    "/scores/{scoreId}": {
+      "schema": "scoreRecord",
+      "description": "Store historical performance logs"
+    }
+  }
+}

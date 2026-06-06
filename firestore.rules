@@ -1,0 +1,26 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // User profile permissions
+    match /users/{userId} {
+      // Allow any signed-in user to fetch user profiles (crucial for local/social Leaderboard displays)
+      allow read: if request.auth != null;
+      
+      // Allow creation during user signup and updating by the matching profile owner
+      allow create, update: if request.auth != null && request.auth.uid == userId;
+    }
+    
+    // Score recording entries permissions
+    match /scores/{scoreId} {
+      // Allow signed-in users to fetch score achievements
+      allow read: if request.auth != null;
+      
+      // Allow signed-in users to record their achievements
+      allow create: if request.auth != null && request.resource.data.uid == request.auth.uid;
+      
+      // Scores are historical and immutable; prevent general modifications
+      allow update, delete: if false;
+    }
+  }
+}

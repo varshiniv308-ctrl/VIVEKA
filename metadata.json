@@ -1,0 +1,6 @@
+{
+  "name": "VIVEKA",
+  "description": "An immersive gamified journey through ancient Indian epics, culture, history, science, and modern knowledge disciplines with real-time stats and leaderboard competition.",
+  "requestFramePermissions": ["microphone"],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
