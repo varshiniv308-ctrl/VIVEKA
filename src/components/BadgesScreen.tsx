@@ -122,7 +122,7 @@ export default function BadgesScreen({ currentUser, onGoBack, onNavigate, lang }
         </div>
         <div className="bg-[#ff9933]/15 px-3 py-1 rounded-full flex items-center gap-1 font-semibold text-[#8f4e00] text-sm">
           <Flame className="w-4 h-4 fill-[#ff9933]" />
-          <span>{currentUser.streak || 5}</span>
+          <span>{currentUser.streak ?? 0}</span>
         </div>
       </header>
 
@@ -239,7 +239,7 @@ export default function BadgesScreen({ currentUser, onGoBack, onNavigate, lang }
           <div className="bg-white/50 backdrop-blur-md rounded-2xl p-4 flex flex-col justify-between h-28 border border-white/40">
             <span className="material-symbols-outlined text-[#ff9933] text-lg font-black leading-none bg-[transparent]">local_fire_department</span>
             <div className="text-left mt-2 font-sans">
-              <p className="text-3xl font-extrabold text-[#ff9933] leading-none mb-1">{currentUser.streak || 5}</p>
+              <p className="text-3xl font-extrabold text-[#ff9933] leading-none mb-1">{currentUser.streak ?? 0}</p>
               <p className="text-[9px] font-bold text-[#887364] uppercase tracking-widest">{t.streak}</p>
             </div>
           </div>

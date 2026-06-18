@@ -120,7 +120,7 @@ export default function ProfileScreen({
         <span className="font-sans text-xl font-bold text-[#8f4e00]">{t.profile}</span>
         <div className="text-[#8f4e00] text-sm font-semibold bg-[#ff9933]/15 px-3 py-1 rounded-full flex items-center gap-1">
           <Flame className="w-4 h-4 fill-[#ff9933] text-[#ff9933]" />
-          <span>{currentUser.streak || 1}</span>
+          <span>{currentUser.streak ?? 0}</span>
         </div>
       </header>
 

@@ -90,7 +90,7 @@ export default function HomeScreen({ user, onSelectCategory, onNavigate, onNavEx
         </div>
         <div className="bg-[#ff9933]/15 text-[#8f4e00] px-3.5 py-1 rounded-full font-sans text-sm font-bold flex items-center gap-1">
           <Flame className="w-4 h-4 text-[#ff9933] fill-[#ff9933]" />
-          <span>{user.streak || 1}</span>
+          <span>{user.streak ?? 0}</span>
         </div>
       </header>
 
@@ -125,7 +125,7 @@ export default function HomeScreen({ user, onSelectCategory, onNavigate, onNavEx
             </div>
             <div>
               <p className="text-[10px] font-bold text-[#887364] uppercase tracking-wider">{t.currentStreak}</p>
-              <p className="font-sans text-lg font-extrabold text-[#ff9933] leading-none mt-0.5">{user.streak || 1} {t.days}</p>
+              <p className="font-sans text-lg font-extrabold text-[#ff9933] leading-none mt-0.5">{user.streak ?? 0} {t.days}</p>
             </div>
           </div>
         </section>

@@ -277,6 +277,9 @@ Support the user's quest for ultimate wisdom and clear their doubts completely. 
   }
 });
 
+// Cache store for daily challenges to guarantee the exact same daily question is delivered per date/difficulty/language
+const dailyChallengesCache = new Map<string, any>();
+
 // 4. Daily AI Challenges Endpoint
 app.post("/api/gemini/daily-challenge", async (req, res) => {
   res.setHeader("Content-Type", "application/json; charset=utf-8");
@@ -284,6 +287,13 @@ app.post("/api/gemini/daily-challenge", async (req, res) => {
   const targetLang = lang || "en";
   const targetLangName = languageNames[targetLang] || "English";
   const diff = difficulty || "Medium";
+  const todayKey = `${date || new Date().toDateString()}_${diff}_${targetLang}`;
+
+  // Check memory cache first
+  if (dailyChallengesCache.has(todayKey)) {
+    console.log(`[Daily Challenge Cache Hit] Serving cached question for key: ${todayKey}`);
+    return res.json({ challenge: dailyChallengesCache.get(todayKey) });
+  }
 
   let attempts = 0;
   const maxAttempts = 3;
@@ -344,6 +354,8 @@ You must ensure 100% language consistency. Do not output any English characters 
   }
 
   if (challengeObj) {
+    // Store in cache for subsequent hits today
+    dailyChallengesCache.set(todayKey, challengeObj);
     return res.json({ challenge: challengeObj });
   } else {
     return res.status(500).json({ error: errorMsg || `Failed to generate daily challenge in ${targetLangName}` });

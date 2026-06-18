@@ -22,11 +22,20 @@ export default function DailyChallengeScreen({
   const [doneToday, setDoneToday] = useState(false);
 
   useEffect(() => {
-    // Check if challenge already done today via local timestamp
+    // Check if challenge already done today via database profile or local timestamp
+    const todayDate = new Date().toDateString();
+    
+    if (currentUser.lastDailyChallengeAt) {
+      const dbDate = new Date(currentUser.lastDailyChallengeAt).toDateString();
+      if (dbDate === todayDate) {
+        setDoneToday(true);
+        return;
+      }
+    }
+
     const record = localStorage.getItem(`dq_challenge_${currentUser.uid}`);
     if (record) {
       const savedDate = new Date(Number(record)).toDateString();
-      const todayDate = new Date().toDateString();
       if (savedDate === todayDate) {
         setDoneToday(true);
       }

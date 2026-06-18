@@ -21,6 +21,8 @@ export interface UserProfile {
   dailyRewardClaimedAt?: number;
   voiceAssistantEnabled?: boolean;
   claimedMilestoneIds?: string[];
+  lastActiveAt?: number;
+  lastDailyChallengeAt?: number;
 }
 
 export enum QuizCategory {

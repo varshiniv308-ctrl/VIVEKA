@@ -163,6 +163,51 @@ function getActiveLocalUser(): UserProfile | null {
   return data ? JSON.parse(data) : null;
 }
 
+function getStreakFieldsForActivity(profile: UserProfile, now: number = Date.now()): { streak: number; bestStreak: number; lastActiveAt: number } {
+  const lastActive = profile.lastActiveAt || 0;
+  if (!lastActive) {
+    const newStreak = 1;
+    return {
+      streak: newStreak,
+      bestStreak: Math.max(profile.bestStreak || 1, newStreak),
+      lastActiveAt: now
+    };
+  }
+
+  const lastActiveDay = new Date(lastActive);
+  const today = new Date(now);
+  const lastActiveDate = new Date(lastActiveDay.getFullYear(), lastActiveDay.getMonth(), lastActiveDay.getDate()).getTime();
+  const todayDate = new Date(today.getFullYear(), today.getMonth(), today.getDate()).getTime();
+  const diffDays = Math.round((todayDate - lastActiveDate) / (1000 * 60 * 60 * 24));
+
+  if (diffDays === 0) {
+    // Already did an activity today, return current values, but update timestamp to keep it active
+    const curStreak = profile.streak || 0;
+    const resolvedStreak = curStreak > 0 ? curStreak : 1;
+    return {
+      streak: resolvedStreak,
+      bestStreak: Math.max(profile.bestStreak || 1, resolvedStreak),
+      lastActiveAt: now
+    };
+  } else if (diffDays === 1) {
+    // Continued streak!
+    const newStreak = (profile.streak || 0) + 1;
+    return {
+      streak: newStreak,
+      bestStreak: Math.max(profile.bestStreak || 1, newStreak),
+      lastActiveAt: now
+    };
+  } else {
+    // Missed a day or more, streak breaks! Reset to 1
+    const newStreak = 1;
+    return {
+      streak: newStreak,
+      bestStreak: Math.max(profile.bestStreak || 1, newStreak),
+      lastActiveAt: now
+    };
+  }
+}
+
 export const DbService = {
   // Subscribe to Authentication changes
   onAuthChanged(callback: (user: UserProfile | null) => void): () => void {
@@ -216,7 +261,8 @@ export const DbService = {
       referredBy: "",
       claimedMilestoneIds: [],
       dailyRewardClaimedAt: 0,
-      voiceAssistantEnabled: false
+      voiceAssistantEnabled: false,
+      lastActiveAt: Date.now()
     };
 
     if (isFirebaseAvailable && auth && db) {
@@ -295,10 +341,37 @@ export const DbService = {
         const docSnap = await getDoc(docRef);
         if (docSnap.exists()) {
           const profile = docSnap.data() as UserProfile;
-          // Ensure referral code is saved if missing
+          let needsUpdate = false;
+          const updatedFields: Partial<UserProfile> = {};
+
           if (!profile.referralCode) {
             profile.referralCode = "VVK" + Math.floor(1000 + Math.random() * 9000);
-            await updateDoc(docRef, { referralCode: profile.referralCode });
+            updatedFields.referralCode = profile.referralCode;
+            needsUpdate = true;
+          }
+
+          // Streak Broken check: if active day is older than yesterday, reset to 0
+          const lastActive = profile.lastActiveAt || 0;
+          if (lastActive) {
+            const lastActiveDay = new Date(lastActive);
+            const today = new Date();
+            const lastActiveDate = new Date(lastActiveDay.getFullYear(), lastActiveDay.getMonth(), lastActiveDay.getDate()).getTime();
+            const todayDate = new Date(today.getFullYear(), today.getMonth(), today.getDate()).getTime();
+            const diffDays = Math.round((todayDate - lastActiveDate) / (1000 * 60 * 60 * 24));
+
+            if (diffDays >= 2 && profile.streak > 0) {
+              profile.streak = 0;
+              updatedFields.streak = 0;
+              needsUpdate = true;
+            }
+          } else {
+            profile.lastActiveAt = profile.createdAt || Date.now();
+            updatedFields.lastActiveAt = profile.lastActiveAt;
+            needsUpdate = true;
+          }
+
+          if (needsUpdate) {
+            await updateDoc(docRef, updatedFields as any);
           }
           return profile;
         } else {
@@ -311,7 +384,34 @@ export const DbService = {
     } else {
       const users = getLocalUsers();
       if (users[uid]) {
-        return users[uid].profile;
+        const profile = users[uid].profile;
+        let needsUpdate = false;
+
+        if (profile.lastActiveAt) {
+          const lastActiveDay = new Date(profile.lastActiveAt);
+          const today = new Date();
+          const lastActiveDate = new Date(lastActiveDay.getFullYear(), lastActiveDay.getMonth(), lastActiveDay.getDate()).getTime();
+          const todayDate = new Date(today.getFullYear(), today.getMonth(), today.getDate()).getTime();
+          const diffDays = Math.round((todayDate - lastActiveDate) / (1000 * 60 * 60 * 24));
+
+          if (diffDays >= 2 && profile.streak > 0) {
+            profile.streak = 0;
+            needsUpdate = true;
+          }
+        } else {
+          profile.lastActiveAt = profile.createdAt || Date.now();
+          needsUpdate = true;
+        }
+
+        if (needsUpdate) {
+          users[uid].profile = profile;
+          saveLocalUsers(users);
+          const active = getActiveLocalUser();
+          if (active && active.uid === uid) {
+            localStorage.setItem(LOCAL_CURRENT_USER_KEY, JSON.stringify(profile));
+          }
+        }
+        return profile;
       }
       const active = getActiveLocalUser();
       if (active && active.uid === uid) {
@@ -439,10 +539,12 @@ export const DbService = {
       throw new Error("You have already claimed your blessing today. Returns in 24 hours.");
     }
 
+    const streakFields = getStreakFieldsForActivity(profile, now);
+
     const updated = await DbService.updateUserProfile(uid, {
       points: profile.points + 100,
       dailyRewardClaimedAt: now,
-      streak: (profile.streak || 1) + 1
+      ...streakFields
     });
 
     return updated;
@@ -462,7 +564,8 @@ export const DbService = {
     const updated = await DbService.updateUserProfile(uid, {
       points: profile.points - 250,
       streak: restoredStreak,
-      bestStreak: Math.max(profile.bestStreak, restoredStreak)
+      bestStreak: Math.max(profile.bestStreak, restoredStreak),
+      lastActiveAt: Date.now()
     });
 
     return updated;
@@ -488,7 +591,8 @@ export const DbService = {
     uid: string, 
     category: QuizCategory, 
     correctCount: number, 
-    totalCount: number
+    totalCount: number,
+    isDailyChallenge?: boolean
   ): Promise<{ profile: UserProfile; xpGained: number; pointsGained: number; newlyUnlockedBadges: Badge[] }> {
     
     // Points strategy: 100 points completion, +50 per correct answer, +150 perfect bonus!
@@ -531,15 +635,18 @@ export const DbService = {
       if (bg) newlyUnlockedBadges.push({ ...bg, isUnlocked: true });
     }
 
-    const updatedStreak = (currentProfile.streak || 1) + 1;
+    const streakFields = getStreakFieldsForActivity(currentProfile, Date.now());
 
     const fieldsToUpdate: Partial<UserProfile> = {
       points: newPoints,
       level: newLevel,
       unlockedBadgeIds: currentUnlockedIds,
-      streak: updatedStreak,
-      bestStreak: Math.max(currentProfile.bestStreak || 1, updatedStreak)
+      ...streakFields
     };
+
+    if (isDailyChallenge) {
+      fieldsToUpdate.lastDailyChallengeAt = Date.now();
+    }
 
     const updatedProfile = await DbService.updateUserProfile(uid, fieldsToUpdate);
 

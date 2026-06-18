@@ -83,7 +83,7 @@ export default function LeadersScreen({ currentUser, onGoBack, onNavigate, lang 
         </div>
         <div className="bg-[#ff9933]/15 px-3 py-1 rounded-full flex items-center gap-1 font-semibold text-[#8f4e00] text-sm">
           <Flame className="w-4 h-4 fill-[#ff9933]" />
-          <span>{currentUser.streak || 5}</span>
+          <span>{currentUser.streak ?? 0}</span>
         </div>
       </header>
 

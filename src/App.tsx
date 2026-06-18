@@ -139,11 +139,14 @@ export default function App() {
     }
 
     try {
+      const isDailyChallenge = !!(customQuestions && customQuestions.length === 1 && customQuestions[0]?.id?.startsWith("daily_"));
+
       const result = await DbService.submitQuizScore(
         currentUser.uid,
         activeCategory,
         correct,
-        total
+        total,
+        isDailyChallenge
       );
 
       setRewards({
